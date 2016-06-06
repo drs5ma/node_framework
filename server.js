@@ -8,15 +8,15 @@ var router = express.Router();
 var path = require('path');
 
 
-// var mongoose = require ("mongoose"); // The reason for this demo.
-// var mongoURI = 'localhost:27017/node-ws-test';
-// var uristring = process.env.MONGODB_URI || mongoURI;
-// mongoose.connect(uristring, function (err, res) {
-//       if (err) {
-//       console.log ('ERROR connecting to: ' + uristring + '. ' + err);} 
-//       else {
-//       console.log ('Succeeded connected to: ' + uristring);}
-// });
+var mongoose = require ("mongoose"); // The reason for this demo.
+var mongoURI = 'localhost:27017/node-ws-test';
+var uristring = process.env.MONGODB_URI || mongoURI;
+mongoose.connect(uristring, function (err, res) {
+      if (err) {
+      console.log ('ERROR connecting to: ' + uristring + '. ' + err);} 
+      else {
+      console.log ('Succeeded connected to: ' + uristring);}
+});
 
 
 //routing
