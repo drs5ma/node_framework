@@ -1,0 +1,18 @@
+{
+  "name": "node_template",
+  "version": "1.0.0",
+  "description": "creates a template for making node.js apps with mongo backend, snap.svg frontend, and websockets pub-sub model for server client communications",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "daniel saha",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.13.4",
+    "http": "0.0.0",
+    "mongodb": "^2.1.21",
+    "mongoose": "^4.4.20",
+    "ws": "^1.1.0"
+  }
+}
