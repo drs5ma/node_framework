@@ -81,8 +81,8 @@
     circle.attr({fill:"orange", opacity:0.24});
 
 
-    var tree = paper.path('M0,0L10,30L90,45L0,0').attr({fill:'green', stroke:'black', strokeWidth:3});
-    tree.transform( 't100,100');
+    // var tree = paper.path('M0,0L10,30L90,45L0,0').attr({fill:'green', stroke:'black', strokeWidth:3});
+    // tree.transform( 't100,100');
 
 
 
@@ -113,34 +113,37 @@
         viewBox: format_viewbox(vb)
       });//player view
       var me = paper.circle( camera_position[0] , camera_position[1] , 24).attr({fill:"black"});
-      me.speed = 240;
+      me.speed = 0.5; //pixels per second
 
 
       paper.click(function(evt){
-
-          //console.log("viewbox: ", vb[0], vb[1], vb[2], vb[3] );
-          // console.log("screenX, screenY: ", evt.screenX, evt.screenY );
-          // console.log("pageX, pageY: ", evt.pageX, evt.pageY );
 
           width = window.innerWidth;
           height = window.innerHeight;
 
           var xratio = evt.pageX/width;
           var yratio = evt.pageY/height;
-          console.log("width, height: ",width, height);
+          //console.log("width, height: ",width, height);
+          //console.log("xratio, yratio: ", xratio,yratio);
           // var xratio = evt.clientX/width;
           // var yratio = evt.clientY/height;
-          console.log("xratio, yratio: ", xratio,yratio);
+
 
 
           var clickpos = [ vb[0]+(xratio*vb[2]) , vb[1]+(yratio*vb[3])  ] ;
 
-          me.animate( {cx: clickpos[0] , cy: clickpos[1] } , me.speed, mina.easeout);
+          var mepos = [parseFloat(me.attr("cx")) , parseFloat(me.attr("cy"))];
+          var x1 = clickpos[0];
+          var y1 = clickpos[1];
+          var x2 = mepos[0];
+          var y2 = mepos[1];
+
+          var d = Math.sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) );
+
+
+          me.animate( {cx: clickpos[0] , cy: clickpos[1] } , d / me.speed, mina.easeout);
+
     });
-
-
-
-
 
 
 
@@ -165,7 +168,8 @@
 
 
 function movecameraonce(){
-        var viewchange = 1;
+
+        var viewchange = 100;
 
         if(window.isWDown ){
             camera_position[1] -= viewchange;
@@ -187,7 +191,7 @@ function movecameraonce(){
 
         // }, 50, mina.none, function(){});//player view
 
-        paper.attr({viewBox: format_viewbox(vb) });
+        paper.animate({viewBox: format_viewbox(vb) }, 200, mina.linear, function(){});
 
 
 }
@@ -222,7 +226,7 @@ function endFunction(){
           window.isDDown = true;
           // camera_position[0] += viewchange;}
         }
-        movecameraonce()
+        movecameraonce();
         //beginFunction();
 
       };
@@ -252,12 +256,140 @@ function endFunction(){
 
 
 
-function Fire(canvas, n) {
+function nextFrame ( el, frameArray,  whichFrame ) {
+        if( whichFrame >= frameArray.length ) { return }
+        el.animate( frameArray[ whichFrame ].animation, frameArray[ whichFrame ].dur, nextFrame.bind( null, el, frameArray, whichFrame + 1 ) );
+
+}
+
+
+function eql_tri(x, y, a){
+  var that = this;
+  this.a = a;
+  this.alt = this.a* Math.sqrt(3)/2.0;
+  this.offsets =[[-1*a/2.0,0-(this.alt/3.0)],
+                 [0,this.alt-(this.alt/3.0)],
+                 [a/2.0,0-(this.alt/3.0)]];
+  this.points =[[this.offsets[0][0]+x,this.offsets[0][1]+y],
+                [this.offsets[1][0]+x,this.offsets[1][1]+y],
+                [this.offsets[2][0]+x,this.offsets[2][1]+y]];
+  return this.points;
+}
+
+
+var tricircle2 = function(x,y,r){
+
+    this.x = x;
+    this.y = y;
+    this.points = eql_tri(x,y,2*r);
+    this.radius = r; 
+    this.group;
+    this.mask;
+
+    this.drawIt = function(){
+      var background = paper.circle(x,y,r).attr({fill:"#fff"});
+      var left = paper.circle(this.points[0][0], this.points[0][1], this.radius);
+      var top = paper.circle(this.points[1][0], this.points[1][1], this.radius);
+      var right = paper.circle(this.points[2][0], this.points[2][1], this.radius);
+      this.group = paper.g(background,left,top,right);
+      this.mask = paper.circle(x,y,r).attr({fill:"#0f0"});
+      this.mask.attr({mask:this.group});
+    }
+
+    function format_transform(deg,x, y){
+      return  'r' +String(deg)+ ','+ String(x)+ ',' +String(y) ;
+    }
+
+    function infRotate( el ,x ,y ) {
+      el.transform(format_transform(0,x,y));
+      el.animate({ transform: format_transform(120,x,y) }, 1000, mina.linear, function() { infRotate(el, x, y)} );
+    }
+
+    this.spin  = function () {
+      infRotate(this.group, this.x, this.y);  
+    }
+
+
+
+    this.drawIt();
+    this.spin();
+    //return this.mask;
+}
+
+
+
+// var Fire = function(x,y,n) {
+
+//     this.x = x;
+//     this.y = y;
+//     this.n = n;
+//     this.group = paper.g(); 
+
+//     function drawTree(){
+//        var leaf = paper.circle(this.x,this.y,10).attr({fill:'orange', opacity:0.24});
+//        var trunk = paper.circle(this.x,this.y,8).attr({fill:'red', opacity: 0.24});
+//        return paper.group(leaf,trunk);
+//     }
+
+//     function respawn( e){
+//       e.remove();
+//       e = drawTree();
+//       paper.append(e);  
+//       ani(e);
+//     }
+    
+//     function ani( e){
+//         var x = Math.random()*100;
+//         var y = Math.random()*100;
+//         var tim = 2400+Math.random()*2400;
+
+//         e.animate(
+
+//           [{opacity:0.8,r: 12, cx:x, cy:y },tim, function(){
+//                 respawn(e);
+//         } ], 
+
+//         [{opacity:0.0,r: 48, cx:x+24, cy:y+24 },tim-1000, function(){
+//         } ]
+
+//         ); 
+//     }
+//     //constructor area
+//     var i;
+//     for(i=0;i<n;i+=1){
+//       var tree = drawTree();
+//       tree.attr({cx:0,cy:0});
+//       this.group.add(tree);
+//     }
+//     //set in motion
+//     var i;
+//     for(i=0;i<this.group.length;i+=1){
+//         ani(this.group[i]);
+//     }
+// }
+
+
+var m = new tricircle2(parseFloat(me.attr('cx')),parseFloat(me.attr('cy')),100);
+
+
+
+for(var i=0;i<10;i+=1){
+for(var j=0;j<10;j+=1){
+
+  tricircle2(i*24, j*24,12);
+
+}
+}
+
+function Fire(canvas, xx,yy,n) {
+    var myx = xx;
+    var myy = yy;
+    var that=this;
     this.canvas = canvas;
     this.group = Snap([]); 
     function drawTree(canvas){
-       var leaf = canvas.circle(24,24,34).attr({fill:'orange', opacity:0.65});
-       var trunk = canvas.circle(24,24,24).attr({fill:'red', opacity: 0.2});
+       var leaf = canvas.circle(myx,myy,10).attr({fill:'orange', opacity:0.24});
+       var trunk = canvas.circle(myx,myy,8).attr({fill:'red', opacity: 0.24});
        return Snap([leaf,trunk]);
     };
     //move the fire then call spawn helper
@@ -265,15 +397,18 @@ function Fire(canvas, n) {
       e.remove();
       e = drawTree(canvas);
       //console.log(typeof(this.drawTree));
-      canvas.append(e);
-      
+      canvas.append(e);  
       ani(canvas, e);
-    
     };
     
     function ani(canvas, e){
-        var x = Math.random()*200;
-        var y = Math.random()*400;
+      // var x = myx+Math.random()*100;
+      // var y = myy+Math.random()*100;
+      // var tim = 1200+Math.random()*2400;
+      // e.animate([{opacity:0.14,r: 34, cx:x, cy:y },tim+200,mina.easein, function(){respawn(canvas,e);}],
+      //  [{opacity:0.24,r: 30, cx:x, cy:y}, tim+400,mina.easein, function(){} ]);
+        var x = Math.random()*100;
+        var y = Math.random()*100;
         var tim = 2400+Math.random()*2400;
         e.animate([{opacity:0.8,r: 12, cx:x, cy:y },tim, function(){
                 respawn(canvas,e);
@@ -283,7 +418,6 @@ function Fire(canvas, n) {
         } ]
         ); 
     };
-  
     //constructor area
     var i;
     for(i=0;i<n;i+=1){
@@ -292,14 +426,10 @@ function Fire(canvas, n) {
       this.group.push(tree);
     }
     //set in motion
-    
     var i;
     for(i=0;i<this.group.length;i+=1){
         ani(this.canvas, this.group[i]);
     }
-
-    
-
 }
 
 
@@ -307,7 +437,10 @@ function Fire(canvas, n) {
 
 
 
-var myfire = new Fire(paper,24);
+
+
+
+var myfire = new Fire(paper,0,0,24);
 
 
 
