@@ -5,7 +5,6 @@ var app = express();
 var port = process.env.PORT || 5000;
 var router = express.Router();
 var path = require('path');
-var pubsub = require('./pubsub');
 
 //provision the database
 var mongoose = require ("mongoose"); // The reason for this demo.
@@ -42,29 +41,37 @@ console.log("websocket server created");
 wss.on("connection", function(ws) {
 
 	//set timer to send the date every second
+
 	var id = setInterval(function() {
-	 	ws.send(JSON.stringify(Date.now()), function() {  })
+
+
+	   ws.send(JSON.stringify({type : 'indirect_response', 
+                msg : 'server_timestamp', 
+                data : Date.now()}), function() {  } );
+
 	}, 1000);
+
 
 
 	var unique_id = console.log(ws.upgradeReq.headers['sec-websocket-key']);
 	ws.send(unique_id);
+
 	//confirm the connection is ooen from the server
-  	console.log("websocket connection open");
+  console.log("websocket connection open");
 
   	ws.on('message', function(msg){
 
 
-  		console.log('server received msg from client');
-  		console.log(msg);
+  	console.log('server received msg from client');
+  	console.log(msg);
 
-  	});
+  });
 
   	//when close connection, remove the set interval
  	ws.on("close", function() {
     	console.log("websocket %s connection close", ws);
     	clearInterval(id);
-  	});
+  });
 
 
 

@@ -11,201 +11,168 @@
 
     
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
-    <script src="pubsub.js"></script>
-    <script src="snap.svg.js"></script>
+    <script src="Vector.js"></script>
+    <script src="fire.js"></script>
+    <script src="mask.js"></script>
+
+    <script src="fixed.snap.svg.js"></script>
     <script src="client.js"></script>
 
 
 
 <script>
 
-//      
-//      
 
-    Snap.plugin(function (Snap, Element, Paper, glob) {
-        var elproto = Element.prototype;
-        elproto.toFront = function () {
-            this.prependTo(this.paper);
-        };
-        elproto.toBack = function () {
-            this.appendTo(this.paper);
-        };
-      });
+function move(obj, vector){
+      obj.attr({cx:parseFloat(me.attr("cx"))+vector[0]});
+      obj.attr({cy:parseFloat(me.attr("cy"))+vector[1]});
+     };
+
+function calc_viewbox(pos, size){
+      var uppleft = [  pos[0]-(size[0]/2.0) , pos[1]-(size[1]/2.0)   ];
+      var arr = [uppleft[0], uppleft[1], size[0], size[1]];
+      return arr;
+    };
+
+function format_viewbox(arr){
+      return arr.join(" ");
+    };
 
 
+function isInside(point, bbox){
+      var x = bbox[0];
+      var y = bbox[1];
+      var width = bbox[2];
+      var height = bbox[3];
 
+      if( point[0] < x || point[1] < y || point[0] > x+width || point[1] > y+height ){
+        return false;
+      }
+      return true;
+
+    }
+
+function centerof_bbox(bbox){
+  var x = bbox[0];
+  var y = bbox[1];
+  var width = bbox[2];
+  var height = bbox[3];
+  return [  x+(width/2.0) , 
+            y+(height/2.0) ];
+
+}
+
+//ratio = 1.5 times bigger with same center
+function larger_bbox(bbox, ratio){
+
+  var x = bbox[0];
+  var y = bbox[1];
+  var width = bbox[2];
+  var height = bbox[3];
+
+  var [cx,cy] = centerof_bbox(bbox);
+  var rw = ratio*width;
+  var rh = ratio*height;
+  return [ cx - (rw/2.0), cy - (rh/2.0) , rw, rh ];
+
+}
+
+    //globals
+    //width, height, paper, camera_position
+    //aspect_ratio, sizeofview, vb, buffer_vb
+    //me, circle, tree
     var width =  window.innerWidth;
     var height = window.innerHeight;
-
-
-      window.addEventListener('keydown', handleKeyDown, false);
-      window.addEventListener('keyup', handleKeyUp, false);
-    
-
-
-
-
+    window.addEventListener('keydown', handleKeyDown, false);
+    window.addEventListener('keyup', handleKeyUp, false);
     var paper = Snap(5000,5000); //world map
-    //paper.attr('preserveAspectRatio', 'xMidYMid slice');
     paper.attr('preserveAspectRatio', 'none');
-
-    var gray = paper.rect(0,0, 5000, 5000).attr({fill:"gray"} );
-    gray.toBack();
-
-
-
     paper.attr({id: "svg1"});
     paper.attr({
       width: String(width)+'px',
       height: String(height)+'px'
     });
-
     var camera_position = [ 250,250 ];
-
     var aspect_ratio = width/height;
-
-
+    $(window).on('resize', function(){
+            width =  window.innerWidth;
+            height = window.innerHeight;
+            aspect_ratio = width/height;   
+    });
     var sizeofview = [ 500,500 ];
-
-
     if(width >= height){
         sizeofview[0] *= aspect_ratio;
     }
     else{
         sizeofview[1] /= aspect_ratio;
     }
+    var vb  = calc_viewbox( camera_position, sizeofview  );
+    var buffer_vb =  larger_bbox(vb,1.5);
+    paper.attr({
+        viewBox: format_viewbox(vb)
+    });//player view
 
-
-
+    //draw objects
     var circle = paper.circle(0,0,200);
     circle.attr({fill:"orange", opacity:0.24});
+    var tree = paper.path('M0,0L10,30L90,45L0,0').attr({fill:'green', stroke:'black', strokeWidth:3});
+    tree.transform( 't100,100');
+    var me = paper.circle( camera_position[0] , camera_position[1] , 24).attr({fill:"black"});
+    me.speed = 0.15; //pixels per second
 
-
-    // var tree = paper.path('M0,0L10,30L90,45L0,0').attr({fill:'green', stroke:'black', strokeWidth:3});
-    // tree.transform( 't100,100');
-
-
-
-
-
-      $(window).on('resize', function(){
-
-            width =  window.innerWidth;
-            height = window.innerHeight;
-
-
-
-
-            aspect_ratio = width/height;
-
-            //console.log(width,height);
-            
-
-      });
-
-
-
-      var vb  = calc_viewbox( camera_position, sizeofview  );
-
-
-
-      paper.attr({
-        viewBox: format_viewbox(vb)
-      });//player view
-      var me = paper.circle( camera_position[0] , camera_position[1] , 24).attr({fill:"black"});
-      me.speed = 0.5; //pixels per second
-
-
-      paper.click(function(evt){
-
-          width = window.innerWidth;
-          height = window.innerHeight;
-
+    //on screen click...
+    paper.click(function(evt){
           var xratio = evt.pageX/width;
           var yratio = evt.pageY/height;
-          //console.log("width, height: ",width, height);
-          //console.log("xratio, yratio: ", xratio,yratio);
-          // var xratio = evt.clientX/width;
-          // var yratio = evt.clientY/height;
-
-
-
           var clickpos = [ vb[0]+(xratio*vb[2]) , vb[1]+(yratio*vb[3])  ] ;
-
           var mepos = [parseFloat(me.attr("cx")) , parseFloat(me.attr("cy"))];
           var x1 = clickpos[0];
           var y1 = clickpos[1];
           var x2 = mepos[0];
           var y2 = mepos[1];
-
           var d = Math.sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) );
-
-
-          me.animate( {cx: clickpos[0] , cy: clickpos[1] } , d / me.speed, mina.easeout);
-
+          me.animate( {cx: clickpos[0] , cy: clickpos[1] } , d / me.speed, mina.linear);
     });
 
-
-
-
-
-    function move(obj, vector){
-      obj.attr({cx:parseFloat(me.attr("cx"))+vector[0]});
-      obj.attr({cy:parseFloat(me.attr("cy"))+vector[1]});
-     };
-
-    function calc_viewbox(pos, size){
-      var uppleft = [  pos[0]-(size[0]/2.0) , pos[1]-(size[1]/2.0)   ];
-      var arr = [uppleft[0], uppleft[1], size[0], size[1]];
-      return arr;
-    };
-
-
-    function format_viewbox(arr){
-      return arr.join(" ");
-    };
-
-
-
-function movecameraonce(){
-
-        var viewchange = 100;
-
-        if(window.isWDown ){
-            camera_position[1] -= viewchange;
-        }
-        if(window.isSDown ){
-            camera_position[1] += viewchange;
-        }
-        if(window.isADown ){
-            camera_position[0] -= viewchange;
-        }
-        if(window.isDDown ){
-            camera_position[0] += viewchange;
-        }
-
-        vb  = calc_viewbox( camera_position, sizeofview );
-
-        // paper.animate({
-        //   viewBox: format_viewbox(vb)
-
-        // }, 50, mina.none, function(){});//player view
-
-        paper.animate({viewBox: format_viewbox(vb) }, 200, mina.linear, function(){});
-
-
-}
-
-function beginFunction(){
-  movecameraonce();
-  myTimeout = setInterval("movecameraonce()", 50);
-};
     
-function endFunction(){
-  if (typeof(myTimeout) != "undefined"){
-    clearTimeout(myTimeout);
-  }
-};
+        function movecameraonce(){
+
+
+                var viewchange = 100;
+                //var oldpos =  [camera_position[0], camera_position[1]];
+
+                if(window.isWDown ){
+                    camera_position[1] -= viewchange;
+                }
+                if(window.isSDown ){
+                    camera_position[1] += viewchange;
+                }
+                if(window.isADown ){
+                    camera_position[0] -= viewchange;
+                }
+                if(window.isDDown ){
+                    camera_position[0] += viewchange;
+                }
+
+                //var mypos = [me.attr('cx'),me.attr('cy')];
+
+                vb  = calc_viewbox( camera_position, sizeofview );
+                paper.animate({viewBox: format_viewbox(vb) }, 480, mina.easein, function(){});
+              
+             
+
+        }
+
+      function beginFunction(){
+        movecameraonce();
+        myTimeout = setInterval("movecameraonce()", 50);
+      };
+          
+      function endFunction(){
+        if (typeof(myTimeout) != "undefined"){
+          clearTimeout(myTimeout);
+        }
+      };
 
 
     function handleKeyDown(event) {
@@ -254,209 +221,15 @@ function endFunction(){
 
 
 
+//var m = new tricircle2(parseFloat(me.attr('cx')),parseFloat(me.attr('cy')),100);
 
-
-function nextFrame ( el, frameArray,  whichFrame ) {
-        if( whichFrame >= frameArray.length ) { return }
-        el.animate( frameArray[ whichFrame ].animation, frameArray[ whichFrame ].dur, nextFrame.bind( null, el, frameArray, whichFrame + 1 ) );
-
-}
-
-
-function eql_tri(x, y, a){
-  var that = this;
-  this.a = a;
-  this.alt = this.a* Math.sqrt(3)/2.0;
-  this.offsets =[[-1*a/2.0,0-(this.alt/3.0)],
-                 [0,this.alt-(this.alt/3.0)],
-                 [a/2.0,0-(this.alt/3.0)]];
-  this.points =[[this.offsets[0][0]+x,this.offsets[0][1]+y],
-                [this.offsets[1][0]+x,this.offsets[1][1]+y],
-                [this.offsets[2][0]+x,this.offsets[2][1]+y]];
-  return this.points;
-}
-
-
-var tricircle2 = function(x,y,r){
-
-    this.x = x;
-    this.y = y;
-    this.points = eql_tri(x,y,2*r);
-    this.radius = r; 
-    this.group;
-    this.mask;
-
-    this.drawIt = function(){
-      var background = paper.circle(x,y,r).attr({fill:"#fff"});
-      var left = paper.circle(this.points[0][0], this.points[0][1], this.radius);
-      var top = paper.circle(this.points[1][0], this.points[1][1], this.radius);
-      var right = paper.circle(this.points[2][0], this.points[2][1], this.radius);
-      this.group = paper.g(background,left,top,right);
-      this.mask = paper.circle(x,y,r).attr({fill:"#0f0"});
-      this.mask.attr({mask:this.group});
-    }
-
-    function format_transform(deg,x, y){
-      return  'r' +String(deg)+ ','+ String(x)+ ',' +String(y) ;
-    }
-
-    function infRotate( el ,x ,y ) {
-      el.transform(format_transform(0,x,y));
-      el.animate({ transform: format_transform(120,x,y) }, 1000, mina.linear, function() { infRotate(el, x, y)} );
-    }
-
-    this.spin  = function () {
-      infRotate(this.group, this.x, this.y);  
-    }
-
-
-
-    this.drawIt();
-    this.spin();
-    //return this.mask;
-}
-
-
-
-// var Fire = function(x,y,n) {
-
-//     this.x = x;
-//     this.y = y;
-//     this.n = n;
-//     this.group = paper.g(); 
-
-//     function drawTree(){
-//        var leaf = paper.circle(this.x,this.y,10).attr({fill:'orange', opacity:0.24});
-//        var trunk = paper.circle(this.x,this.y,8).attr({fill:'red', opacity: 0.24});
-//        return paper.group(leaf,trunk);
-//     }
-
-//     function respawn( e){
-//       e.remove();
-//       e = drawTree();
-//       paper.append(e);  
-//       ani(e);
-//     }
-    
-//     function ani( e){
-//         var x = Math.random()*100;
-//         var y = Math.random()*100;
-//         var tim = 2400+Math.random()*2400;
-
-//         e.animate(
-
-//           [{opacity:0.8,r: 12, cx:x, cy:y },tim, function(){
-//                 respawn(e);
-//         } ], 
-
-//         [{opacity:0.0,r: 48, cx:x+24, cy:y+24 },tim-1000, function(){
-//         } ]
-
-//         ); 
-//     }
-//     //constructor area
-//     var i;
-//     for(i=0;i<n;i+=1){
-//       var tree = drawTree();
-//       tree.attr({cx:0,cy:0});
-//       this.group.add(tree);
-//     }
-//     //set in motion
-//     var i;
-//     for(i=0;i<this.group.length;i+=1){
-//         ani(this.group[i]);
-//     }
-// }
-
-
-var m = new tricircle2(parseFloat(me.attr('cx')),parseFloat(me.attr('cy')),100);
-
-
-
-for(var i=0;i<10;i+=1){
-for(var j=0;j<10;j+=1){
-
-  tricircle2(i*24, j*24,12);
-
-}
-}
-
-function Fire(canvas, xx,yy,n) {
-    var myx = xx;
-    var myy = yy;
-    var that=this;
-    this.canvas = canvas;
-    this.group = Snap([]); 
-    function drawTree(canvas){
-       var leaf = canvas.circle(myx,myy,10).attr({fill:'orange', opacity:0.24});
-       var trunk = canvas.circle(myx,myy,8).attr({fill:'red', opacity: 0.24});
-       return Snap([leaf,trunk]);
-    };
-    //move the fire then call spawn helper
-    function respawn(canvas, e){
-      e.remove();
-      e = drawTree(canvas);
-      //console.log(typeof(this.drawTree));
-      canvas.append(e);  
-      ani(canvas, e);
-    };
-    
-    function ani(canvas, e){
-      // var x = myx+Math.random()*100;
-      // var y = myy+Math.random()*100;
-      // var tim = 1200+Math.random()*2400;
-      // e.animate([{opacity:0.14,r: 34, cx:x, cy:y },tim+200,mina.easein, function(){respawn(canvas,e);}],
-      //  [{opacity:0.24,r: 30, cx:x, cy:y}, tim+400,mina.easein, function(){} ]);
-        var x = Math.random()*100;
-        var y = Math.random()*100;
-        var tim = 2400+Math.random()*2400;
-        e.animate([{opacity:0.8,r: 12, cx:x, cy:y },tim, function(){
-                respawn(canvas,e);
-        } ], 
-        [{opacity:0.0,r: 48, cx:x+24, cy:y+24 },tim-1000, function(){
-                //respawn(canvas,e);
-        } ]
-        ); 
-    };
-    //constructor area
-    var i;
-    for(i=0;i<n;i+=1){
-      var tree = drawTree(this.canvas);
-      tree.attr({cx:0,cy:0});
-      this.group.push(tree);
-    }
-    //set in motion
-    var i;
-    for(i=0;i<this.group.length;i+=1){
-        ani(this.canvas, this.group[i]);
-    }
-}
+var n = new screenFire();
+n.init(100);
+//n.endme();
 
 
 
 
-
-
-
-
-
-var myfire = new Fire(paper,0,0,24);
-
-
-
-
-
-
-
-
-
-
-
-    // var c = paper.circle(150, 2000, 100).attr( {fill: "#bada55" });
-
-    // paper.attr({
-    //   viewBox: "0 0 2500 2500"
-    // });
 
 
     

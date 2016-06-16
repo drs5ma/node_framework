@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// build: 2015-04-13
+// build: 2015-11-09
 
 // Copyright (c) 2013 Adobe Systems Incorporated. All rights reserved.
 // 
@@ -30,13 +30,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // ┌────────────────────────────────────────────────────────────┐ \\
-// │ Eve 0.4.2 - JavaScript Events Library                      │ \\
+// │ Eve 0.5.0 - JavaScript Events Library                      │ \\
 // ├────────────────────────────────────────────────────────────┤ \\
 // │ Author Dmitry Baranovskiy (http://dmitry.baranovskiy.com/) │ \\
 // └────────────────────────────────────────────────────────────┘ \\
 
 (function (glob) {
-    var version = "0.4.2",
+    var version = "0.5.0",
         has = "hasOwnProperty",
         separator = /[\.\/]/,
         comaseparator = /\s*,\s*/,
@@ -63,6 +63,11 @@
                 }
             }
         },
+        objtos = Object.prototype.toString,
+        Str = String,
+        isArray = Array.isArray || function (ar) {
+            return ar instanceof Array || objtos.call(ar) == "[object Array]";
+        };
     /*\
      * eve
      [ method ]
@@ -78,7 +83,6 @@
      = (object) array of returned values from the listeners. Array has two methods `.firstDefined()` and `.lastDefined()` to get first or last not `undefined` value.
     \*/
         eve = function (name, scope) {
-            name = String(name);
             var e = events,
                 oldstop = stop,
                 args = Array.prototype.slice.call(arguments, 2),
@@ -155,7 +159,7 @@
      = (array) array of event handlers
     \*/
     eve.listeners = function (name) {
-        var names = name.split(separator),
+        var names = isArray(name) ? name : name.split(separator),
             e = events,
             item,
             items,
@@ -185,7 +189,25 @@
         }
         return out;
     };
-    
+    /*\
+     * eve.separator
+     [ method ]
+
+     * If for some reasons you don’t like default separators (`.` or `/`) you can specify yours
+     * here. Be aware that if you pass a string longer than one character it will be treated as
+     * a list of characters.
+
+     - separator (string) new separator. Empty string resets to default: `.` or `/`.
+    \*/
+    eve.separator = function (sep) {
+        if (sep) {
+            sep = Str(sep).replace(/(?=[\.\^\]\[\-])/g, "\\");
+            sep = "[" + sep + "]";
+            separator = new RegExp(sep);
+        } else {
+            separator = /[\.\/]/;
+        }
+    };
     /*\
      * eve.on
      [ method ]
@@ -195,9 +217,10 @@
      | eve("mouse.under.floor"); // triggers f
      * Use @eve to trigger the listener.
      **
-     > Arguments
-     **
      - name (string) name of the event, dot (`.`) or slash (`/`) separated, with optional wildcards
+     - f (function) event handler function
+     **
+     - name (array) if you don’t want to use separators, you can use array of strings
      - f (function) event handler function
      **
      = (function) returned function accepts a single numeric parameter that represents z-index of the handler. It is an optional feature and only used when you need to ensure that some subset of handlers will be invoked in a given order, despite of the order of assignment. 
@@ -211,14 +234,13 @@
      * Note: I assume most of the time you don’t need to worry about z-index, but it’s nice to have this feature “just in case”.
     \*/
     eve.on = function (name, f) {
-        name = String(name);
         if (typeof f != "function") {
             return function () {};
         }
-        var names = name.split(comaseparator);
+        var names = isArray(name) ? (isArray(name[0]) ? name : [name]) : Str(name).split(comaseparator);
         for (var i = 0, ii = names.length; i < ii; i++) {
             (function (name) {
-                var names = name.split(separator),
+                var names = isArray(name) ? name : Str(name).split(separator),
                     e = events,
                     exist;
                 for (var i = 0, ii = names.length; i < ii; i++) {
@@ -285,10 +307,11 @@
      = (boolean) `true`, if current event’s name contains `subname`
     \*/
     eve.nt = function (subname) {
+        var cur = isArray(current_event) ? current_event.join(".") : current_event;
         if (subname) {
-            return new RegExp("(?:\\.|\\/|^)" + subname + "(?:\\.|\\/|$)").test(current_event);
+            return new RegExp("(?:\\.|\\/|^)" + subname + "(?:\\.|\\/|$)").test(cur);
         }
-        return current_event;
+        return cur;
     };
     /*\
      * eve.nts
@@ -300,7 +323,7 @@
      = (array) names of the event
     \*/
     eve.nts = function () {
-        return current_event.split(separator);
+        return isArray(current_event) ? current_event : current_event.split(separator);
     };
     /*\
      * eve.off
@@ -325,19 +348,20 @@
             eve._events = events = {n: {}};
             return;
         }
-        var names = name.split(comaseparator);
+        var names = isArray(name) ? (isArray(name[0]) ? name : [name]) : Str(name).split(comaseparator);
         if (names.length > 1) {
             for (var i = 0, ii = names.length; i < ii; i++) {
                 eve.off(names[i], f);
             }
             return;
         }
-        names = name.split(separator);
+        names = isArray(name) ? name : Str(name).split(separator);
         var e,
             key,
             splice,
             i, ii, j, jj,
-            cur = [events];
+            cur = [events],
+            inodes = [];
         for (i = 0, ii = names.length; i < ii; i++) {
             for (j = 0; j < cur.length; j += splice.length - 2) {
                 splice = [j, 1];
@@ -345,10 +369,18 @@
                 if (names[i] != wildcard) {
                     if (e[names[i]]) {
                         splice.push(e[names[i]]);
+                        inodes.unshift({
+                            n: e,
+                            name: names[i]
+                        });
                     }
                 } else {
                     for (key in e) if (e[has](key)) {
                         splice.push(e[key]);
+                        inodes.unshift({
+                            n: e,
+                            name: key
+                        });
                     }
                 }
                 cur.splice.apply(cur, splice);
@@ -382,6 +414,20 @@
                 e = e.n;
             }
         }
+        // prune inner nodes in path
+        prune: for (i = 0, ii = inodes.length; i < ii; i++) {
+            e = inodes[i];
+            for (key in e.n[e.name].f) {
+                // not empty (has listeners)
+                continue prune;
+            }
+            for (key in e.n[e.name].n) {
+                // not empty (has children)
+                continue prune;
+            }
+            // is empty
+            delete e.n[e.name];
+        }
     };
     /*\
      * eve.once
@@ -402,7 +448,7 @@
     \*/
     eve.once = function (name, f) {
         var f2 = function () {
-            eve.unbind(name, f2);
+            eve.off(name, f2);
             return f.apply(this, arguments);
         };
         return eve.on(name, f2);
@@ -809,7 +855,7 @@ var mina = (function (eve) {
 // limitations under the License.
 
 var Snap = (function(root) {
-Snap.version = "0.4.0";
+Snap.version = "0.3.0";
 /*\
  * Snap
  [ method ]
@@ -879,7 +925,7 @@ var has = "hasOwnProperty",
     hsrg = {hs: 1, rg: 1},
     pathCommand = /([a-z])[\s,]*((-?\d*\.?\d*(?:e[\-+]?\d+)?[\s]*,?[\s]*)+)/ig,
     tCommand = /([rstm])[\s,]*((-?\d*\.?\d*(?:e[\-+]?\d+)?[\s]*,?[\s]*)+)/ig,
-    pathValues = /(-?\d*\.?\d*(?:e[\-+]?\\d+)?)[\s]*,?[\s]*/ig,
+    pathValues = /(-?\d*\.?\d*(?:e[\-+]?\d+)?)[\s]*,?[\s]*/ig,
     idgen = 0,
     idprefix = "S" + (+new Date).toString(36),
     ID = function (el) {
@@ -1430,6 +1476,7 @@ Snap.getRGB = cacher(function (colour) {
     }
     return {r: -1, g: -1, b: -1, hex: "none", error: 1, toString: rgbtoString};
 }, Snap);
+// SIERRA It seems odd that the following 3 conversion methods are not expressed as .this2that(), like the others.
 /*\
  * Snap.hsb
  [ method ]
@@ -1735,6 +1782,7 @@ Snap.rgb2hsl = function (r, g, b) {
 };
 
 // Transformations
+// SIERRA Snap.parsePathString(): By _array of arrays,_ I assume you mean a format like this for two separate segments? [ ["M10,10","L90,90"], ["M90,10","L10,90"] ] Otherwise how is each command structured?
 /*\
  * Snap.parsePathString
  [ method ]
@@ -2250,6 +2298,7 @@ Snap.parse = function (svg) {
 function Fragment(frag) {
     this.node = frag;
 }
+// SIERRA Snap.fragment() could especially use a code example
 /*\
  * Snap.fragment
  [ method ]
@@ -3476,10 +3525,12 @@ Snap.plugin(function (Snap, Element, Paper, glob, Fragment) {
         anim._callback = callback;
         eve("snap.animcreated." + el.id, anim);
         eve.once("mina.finish." + anim.id, function () {
+            eve.off("mina.*." + anim.id);
             delete el.anims[anim.id];
             callback && callback.call(el);
         });
         eve.once("mina.stop." + anim.id, function () {
+            eve.off("mina.*." + anim.id);
             delete el.anims[anim.id];
         });
         return el;
@@ -3779,6 +3830,43 @@ Snap.plugin(function (Snap, Element, Paper, glob, Fragment) {
                 sin = +math.sin(a).toFixed(9);
             this.add(cos, sin, -sin, cos, x, y);
             return this.add(1, 0, 0, 1, -x, -y);
+        };
+        /*\
+         * Matrix.skewX
+         [ method ]
+         **
+         * Skews the matrix along the x-axis
+         - x (number) Angle to skew along the x-axis (in degrees).
+        \*/
+        matrixproto.skewX = function (x) {
+            return this.skew(x, 0);
+        };
+        /*\
+         * Matrix.skewY
+         [ method ]
+         **
+         * Skews the matrix along the y-axis
+         - y (number) Angle to skew along the y-axis (in degrees).
+        \*/
+        matrixproto.skewY = function (y) {
+            return this.skew(0, y);
+        };
+        /*\
+         * Matrix.skew
+         [ method ]
+         **
+         * Skews the matrix
+         - y (number) Angle to skew along the y-axis (in degrees).
+         - x (number) Angle to skew along the x-axis (in degrees).
+        \*/
+        matrixproto.skew = function (x, y) {
+            x = x || 0;
+            y = y || 0;
+            x = Snap.rad(x);
+            y = Snap.rad(y);
+            var c = math.tan(x).toFixed(9);
+            var b = math.tan(y).toFixed(9);
+            return this.add(1, b, c, 1, 0, 0);
         };
         /*\
          * Matrix.x
@@ -7198,13 +7286,6 @@ Snap.plugin(function (Snap, Element, Paper, glob) {
     eve.on("snap.util.equal", function (name, b) {
         var A, B, a = Str(this.attr(name) || ""),
             el = this;
-        if (isNumeric(a) && isNumeric(b)) {
-            return {
-                from: parseFloat(a),
-                to: parseFloat(b),
-                f: getNumber
-            };
-        }
         if (names[name] == "colour") {
             A = Snap.color(a);
             B = Snap.color(b);
@@ -7249,6 +7330,13 @@ Snap.plugin(function (Snap, Element, Paper, glob) {
                 from: A,
                 to: B,
                 f: function (val) { return val; }
+            };
+        }
+        if (isNumeric(a) && isNumeric(b)) {
+            return {
+                from: parseFloat(a),
+                to: parseFloat(b),
+                f: getNumber
             };
         }
         var aUnit = a.match(reUnit),
