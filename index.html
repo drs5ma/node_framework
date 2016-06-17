@@ -10,10 +10,12 @@
 
 
     
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/gsap/latest/TweenMax.min.js"></script>
     <script src="Vector.js"></script>
     <script src="fire.js"></script>
     <script src="mask.js"></script>
+    <script src="stats.min.js"></script>
 
     <script src="fixed.snap.svg.js"></script>
     <script src="client.js"></script>
@@ -120,6 +122,14 @@ function larger_bbox(bbox, ratio){
     var me = paper.circle( camera_position[0] , camera_position[1] , 24).attr({fill:"black"});
     me.speed = 0.15; //pixels per second
 
+
+
+
+
+
+
+
+
     //on screen click...
     paper.click(function(evt){
           var xratio = evt.pageX/width;
@@ -136,43 +146,20 @@ function larger_bbox(bbox, ratio){
 
     
         function movecameraonce(){
-
-
                 var viewchange = 100;
                 //var oldpos =  [camera_position[0], camera_position[1]];
-
                 if(window.isWDown ){
-                    camera_position[1] -= viewchange;
-                }
+                    camera_position[1] -= viewchange;}
                 if(window.isSDown ){
-                    camera_position[1] += viewchange;
-                }
+                    camera_position[1] += viewchange;}
                 if(window.isADown ){
-                    camera_position[0] -= viewchange;
-                }
+                    camera_position[0] -= viewchange;}
                 if(window.isDDown ){
-                    camera_position[0] += viewchange;
-                }
-
+                    camera_position[0] += viewchange;}
                 //var mypos = [me.attr('cx'),me.attr('cy')];
-
                 vb  = calc_viewbox( camera_position, sizeofview );
                 paper.animate({viewBox: format_viewbox(vb) }, 480, mina.easein, function(){});
-              
-             
-
         }
-
-      function beginFunction(){
-        movecameraonce();
-        myTimeout = setInterval("movecameraonce()", 50);
-      };
-          
-      function endFunction(){
-        if (typeof(myTimeout) != "undefined"){
-          clearTimeout(myTimeout);
-        }
-      };
 
 
     function handleKeyDown(event) {
@@ -197,7 +184,6 @@ function larger_bbox(bbox, ratio){
         //beginFunction();
 
       };
-
     function handleKeyUp(event) {
         if (event.keyCode === 87) {
           window.isWDown = false;
@@ -211,24 +197,15 @@ function larger_bbox(bbox, ratio){
         if (event.keyCode === 68) {
           window.isDDown = false;
         }
-
-
-        endFunction();
-
+        //endFunction();
       };
-
-
-
 
 
 //var m = new tricircle2(parseFloat(me.attr('cx')),parseFloat(me.attr('cy')),100);
 
-var n = new screenFire();
-n.init(100);
+//var n = new screenFire();
+// n.init(100);
 //n.endme();
-
-
-
 
 
 

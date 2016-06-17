@@ -1,5 +1,5 @@
 
-function bigfire(){}
+var bigfire = function(){};
 bigfire.prototype = {
     init: function(x,y){
       this.x = x;
@@ -53,7 +53,7 @@ bigfire.prototype = {
     }
 }
 
-
+w
 
 function screenFire(){}
 screenFire.prototype = {
@@ -81,7 +81,7 @@ screenFire.prototype = {
 
 
     },
-    endme:function(){
+   w endme:function(){
       clearInterval(this.make);
       clearInterval(this.end);
       var i;        

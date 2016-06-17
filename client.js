@@ -14,17 +14,43 @@ connection.onopen = function(){
 
 	//console.log("client: on open");
 
+
+
+};
+
+		
+connection.sendposition = function(x,y){
+
+
+
 }
 
+
+
 connection.onmessage = function (event) {
-	//console.log("client received dataa from server:");
-	//console.log(event.data);
-	//var obj = JSON.parse(event.data);
+	if(event.data!=""){
+		var json = JSON.parse(event.data);
 
-	//console.log(obj);
-	//var out = "message received: "+JSON.parse(event);
-	//console.log(out);
 
+
+		if(json['msg']=='server_timestamp'){
+			var m = new bigfire();
+			m.init(parseFloat(json.x), parseFloat(json.y));
+		}
+
+
+
+		if(json['msg']==''){
+
+			
+		}
+
+
+
+
+
+
+	}
 };
 
 

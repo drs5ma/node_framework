@@ -38,39 +38,50 @@ console.log("http server listening on %d", port);
 var wss = new WebSocketServer({server: server});
 console.log("websocket server created");
 
+wss.broadcast = function broadcast(d) {
+  wss.clients.forEach(function each(client) {
+    client.send(d);
+  });
+};
+
+
+
+var id = setInterval(function() {
+
+      var data = JSON.stringify({ type: 'indirect_response', 
+                              msg: 'server_timestamp', 
+                              data: Date.now(),
+                              x: Math.random()*500,
+                              y: Math.random()*500});
+
+      wss.broadcast(data);
+
+     // ws.send(data), function() {  } );
+
+}, 1000);
+
+
 wss.on("connection", function(ws) {
-
 	//set timer to send the date every second
-
-	var id = setInterval(function() {
-
-
-	   ws.send(JSON.stringify({type : 'indirect_response', 
-                msg : 'server_timestamp', 
-                data : Date.now()}), function() {  } );
-
-	}, 1000);
-
-
 
 	var unique_id = console.log(ws.upgradeReq.headers['sec-websocket-key']);
 	ws.send(unique_id);
 
+
 	//confirm the connection is ooen from the server
   console.log("websocket connection open");
 
-  	ws.on('message', function(msg){
 
 
+  ws.on('message', function(msg){
   	console.log('server received msg from client');
   	console.log(msg);
-
   });
 
   	//when close connection, remove the set interval
  	ws.on("close", function() {
     	console.log("websocket %s connection close", ws);
-    	clearInterval(id);
+    	// clearInterval(id);
   });
 
 
