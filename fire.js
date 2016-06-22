@@ -20,7 +20,9 @@ bigfire.prototype = {
                     self.particles[a].attr({
                             visibility: "hidden"
                         });
+                    self.particles[a].remove();
                     self.lifespan -= 1;
+
               }
       }
       for(i=0;i<this.width;i+=1){
@@ -36,7 +38,8 @@ bigfire.prototype = {
           var rand_t = this.turnover(240,960);
           var self = this;
           
-          particle.animate({fill:'red',opacity:0.1,r: 48, cx:rand_x, cy:rand_y },rand_t, callback(i)  );
+          particle.animate({fill:'red',opacity:0.1,r: 48, cx:rand_x, cy:rand_y },rand_t, function(){this.remove();}  );
+          //particle.animate({fill:'red',opacity:0.1,r: 48, cx:rand_x, cy:rand_y },rand_t, callback(i)  );
       }
     },
     killme: function(){
@@ -68,6 +71,7 @@ screenFire.prototype = {
               m.init(Math.random()*vb[2]+vb[0],vb[1]+Math.random()*vb[3]);
               self.firelist.push(m);
       }, this.freq);
+      
       this.destroy = setInterval(function(){ 
               var i;        
               for(i=0;i<self.firelist.length;i+=1){

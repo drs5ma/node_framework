@@ -53,7 +53,7 @@ bigfire.prototype = {
     }
 }
 
-w
+
 
 function screenFire(){}
 screenFire.prototype = {

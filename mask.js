@@ -1,5 +1,3 @@
-
-
 function eql_tri(x, y, a){
   var that = this;
   this.a = a;

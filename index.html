@@ -24,35 +24,28 @@
 <script>
 
 
+
 function move(obj, vector){
       obj.attr({cx:parseFloat(me.attr("cx"))+vector[0]});
       obj.attr({cy:parseFloat(me.attr("cy"))+vector[1]});
      };
-
 function calc_viewbox(pos, size){
       var uppleft = [  pos[0]-(size[0]/2.0) , pos[1]-(size[1]/2.0)   ];
       var arr = [uppleft[0], uppleft[1], size[0], size[1]];
       return arr;
     };
-
 function format_viewbox(arr){
       return arr.join(" ");
     };
-
-
 function isInside(point, bbox){
       var x = bbox[0];
       var y = bbox[1];
       var width = bbox[2];
       var height = bbox[3];
-
       if( point[0] < x || point[1] < y || point[0] > x+width || point[1] > y+height ){
-        return false;
-      }
+        return false;}
       return true;
-
     }
-
 function centerof_bbox(bbox){
   var x = bbox[0];
   var y = bbox[1];
@@ -60,23 +53,89 @@ function centerof_bbox(bbox){
   var height = bbox[3];
   return [  x+(width/2.0) , 
             y+(height/2.0) ];
-
 }
-
 //ratio = 1.5 times bigger with same center
 function larger_bbox(bbox, ratio){
-
   var x = bbox[0];
   var y = bbox[1];
   var width = bbox[2];
   var height = bbox[3];
-
   var [cx,cy] = centerof_bbox(bbox);
   var rw = ratio*width;
   var rh = ratio*height;
   return [ cx - (rw/2.0), cy - (rh/2.0) , rw, rh ];
-
 }
+
+function movecameraonce(){
+    var cam_pos = [camera_position[0],camera_position[1]];
+    var viewchange = 140;
+    if(window.isWDown ){
+        cam_pos[1] -= viewchange;}
+    if(window.isSDown ){
+        cam_pos[1] += viewchange;}
+    if(window.isADown ){
+        cam_pos[0] -= viewchange;}
+    if(window.isDDown ){
+        cam_pos[0] += viewchange;}
+    var temp_vb  = calc_viewbox( cam_pos, sizeofview );
+    var inside_pt = [clients[my_id]['svgobj'].attr('cx'),clients[my_id]['svgobj'].attr('cy')];
+    if ( isInside(inside_pt, temp_vb ) ){
+      var anims = clients[my_id]['svgobj'].inAnim();
+      if(anims.length==0){
+        camera_position = cam_pos;
+        vb  = temp_vb;
+        paper.animate({viewBox: format_viewbox(vb) }, 480, mina.easein, function(){});
+      }
+      else{
+        var another_pt = [anims[0].anim.attr['cx'],anims[0].anim.attr['cy'] ];
+        if(isInside(another_pt, temp_vb)){
+          camera_position = cam_pos;
+          vb  = temp_vb;
+          paper.animate({viewBox: format_viewbox(vb) }, 480, mina.easein, function(){});
+        }
+      }
+
+    }
+}
+
+
+function handleKeyDown(event) {
+  // var viewchange = 100;
+  if (event.keyCode === 87) { //66 is "b"
+    window.isWDown = true;}
+  if (event.keyCode === 65) { //66 is "b"
+    window.isADown = true;}
+  if (event.keyCode === 83) { //66 is "b"
+    window.isSDown = true;}
+  if (event.keyCode === 68) { //66 is "b"
+    window.isDDown = true;  }
+  movecameraonce();
+};
+
+function handleKeyUp(event) {
+  if (event.keyCode === 87) {
+    window.isWDown = false;}
+  if (event.keyCode === 65) {
+    window.isADown = false;}
+  if (event.keyCode === 83) {
+    window.isSDown = false;}
+  if (event.keyCode === 68) {
+    window.isDDown = false;}
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     //globals
     //width, height, paper, camera_position
@@ -93,7 +152,9 @@ function larger_bbox(bbox, ratio){
       width: String(width)+'px',
       height: String(height)+'px'
     });
-    var camera_position = [ 250,250 ];
+
+    var vb;
+    var camera_position;// = [250,250];
     var aspect_ratio = width/height;
     $(window).on('resize', function(){
             width =  window.innerWidth;
@@ -107,97 +168,57 @@ function larger_bbox(bbox, ratio){
     else{
         sizeofview[1] /= aspect_ratio;
     }
-    var vb  = calc_viewbox( camera_position, sizeofview  );
-    var buffer_vb =  larger_bbox(vb,1.5);
-    paper.attr({
-        viewBox: format_viewbox(vb)
-    });//player view
+
+function setview(){
+  var me_obj = clients[my_id];
+  camera_position  = [me_obj.x,me_obj.y];
+  vb  = calc_viewbox( camera_position, sizeofview  );
+  buffer_vb=  larger_bbox(vb,1.5);
+  paper.attr({
+      viewBox: format_viewbox(vb)
+  });//player view
+}
 
     //draw objects
     var circle = paper.circle(0,0,200);
     circle.attr({fill:"orange", opacity:0.24});
     var tree = paper.path('M0,0L10,30L90,45L0,0').attr({fill:'green', stroke:'black', strokeWidth:3});
     tree.transform( 't100,100');
-    var me = paper.circle( camera_position[0] , camera_position[1] , 24).attr({fill:"black"});
-    me.speed = 0.15; //pixels per second
 
-
-
-
-
-
-
-
+    //var me = paper.circle( camera_position[0] , camera_position[1] , 24).attr({fill:"black"});
+    //var me;
+    //  = me_obj['svgobj'];
+    // me.speed = 0.15; //pixels per second
+    //var me;
 
     //on screen click...
     paper.click(function(evt){
           var xratio = evt.pageX/width;
           var yratio = evt.pageY/height;
           var clickpos = [ vb[0]+(xratio*vb[2]) , vb[1]+(yratio*vb[3])  ] ;
-          var mepos = [parseFloat(me.attr("cx")) , parseFloat(me.attr("cy"))];
+          var mepos = [parseFloat(clients[my_id]['svgobj'].attr("cx")) , parseFloat(clients[my_id]['svgobj'].attr("cy"))];
           var x1 = clickpos[0];
           var y1 = clickpos[1];
           var x2 = mepos[0];
           var y2 = mepos[1];
           var d = Math.sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) );
-          me.animate( {cx: clickpos[0] , cy: clickpos[1] } , d / me.speed, mina.linear);
+          clients[my_id]['svgobj'].animate( {cx: clickpos[0] , cy: clickpos[1] } , d / clients[my_id]['speed'], mina.linear);
+
+
     });
 
     
-        function movecameraonce(){
-                var viewchange = 100;
-                //var oldpos =  [camera_position[0], camera_position[1]];
-                if(window.isWDown ){
-                    camera_position[1] -= viewchange;}
-                if(window.isSDown ){
-                    camera_position[1] += viewchange;}
-                if(window.isADown ){
-                    camera_position[0] -= viewchange;}
-                if(window.isDDown ){
-                    camera_position[0] += viewchange;}
-                //var mypos = [me.attr('cx'),me.attr('cy')];
-                vb  = calc_viewbox( camera_position, sizeofview );
-                paper.animate({viewBox: format_viewbox(vb) }, 480, mina.easein, function(){});
-        }
+      
 
 
-    function handleKeyDown(event) {
-        // var viewchange = 100;
-        if (event.keyCode === 87) { //66 is "b"
-          window.isWDown = true;
-          // camera_position[1] -= viewchange;
-        }
-        if (event.keyCode === 65) { //66 is "b"
-          window.isADown = true;
-          // camera_position[0] -= viewchange;
-        }
-        if (event.keyCode === 83) { //66 is "b"
-          window.isSDown = true;
-          // camera_position[1] += viewchange;
-        }
-        if (event.keyCode === 68) { //66 is "b"
-          window.isDDown = true;
-          // camera_position[0] += viewchange;}
-        }
-        movecameraonce();
-        //beginFunction();
+// function repeatOften() {
 
-      };
-    function handleKeyUp(event) {
-        if (event.keyCode === 87) {
-          window.isWDown = false;
-        }
-        if (event.keyCode === 65) {
-          window.isADown = false;
-        }
-        if (event.keyCode === 83) {
-          window.isSDown = false;
-         }
-        if (event.keyCode === 68) {
-          window.isDDown = false;
-        }
-        //endFunction();
-      };
+//   requestAnimationFrame(repeatOften);
+// }
+
+
+// requestAnimationFrame(repeatOften);
+
 
 
 //var m = new tricircle2(parseFloat(me.attr('cx')),parseFloat(me.attr('cy')),100);
