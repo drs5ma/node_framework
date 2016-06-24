@@ -59,7 +59,12 @@ connection.onmessage = function (event) {
 			if(true){//person.id != my_id){//dont add self to clients list
 				clients[person.id] = person;
 				console.log(person);
-				clients[person.id]['svgobj'] = paper.circle(person.x,person.y,24);
+
+				
+				var mestring =   't'+person.x+' '+person.y;
+				clients[person.id]['svgobj'] = paper.circle(0,0,24).transform( mestring );
+
+
 				if(person.id == my_id){
 				setview();}
 			}
@@ -74,17 +79,19 @@ connection.onmessage = function (event) {
 			// remove player
 		}
 		else if(msg=='server_timestamp'){
-			var i ;
-			for(i=0;i<current_fires.length;i+=1){
-				if(current_fires[i].lifespan == 0){
-					current_fires[i].killme();
-					current_fires[i] = null;
-					current_fires.splice(i,1);
-				}
-			}
-			var m = new bigfire();
-		    m.init(parseFloat(json.x), parseFloat(json.y));
-		    current_fires.push(m);
+			// var i ;
+			// for(i=0;i<current_fires.length;i+=1){
+			// 	if(current_fires[i].lifespan == 0){
+			// 		current_fires[i].killme();
+			// 		current_fires[i] = null;
+			// 		current_fires.splice(i,1);
+			// 	}
+			// }
+			// var m = new bigfire();
+		 //    m.init(parseFloat(json.x), parseFloat(json.y));
+		 //    current_fires.push(m);
+		 	passdata = json;
+		 	flag  = true;
 
 		}
 		else{

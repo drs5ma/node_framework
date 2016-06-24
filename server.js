@@ -56,7 +56,7 @@ var id = setInterval(function() {
                               x: Math.random()*500,
                               y: Math.random()*500});
       wss.broadcast(data);
-}, 2400);
+}, 250);
 
 
 var Clients = {};
@@ -74,6 +74,7 @@ wss.on("connection", function(ws) {
   var newjoin = new Player();
   var x = Math.random()*1000 - 500.0;
   var y= Math.random()*1000 - 500;
+
   console.log(x,y);
   newjoin.init(x,y,unique_id);
   Clients[unique_id] = newjoin;

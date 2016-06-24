@@ -4,6 +4,7 @@
     <style>
       body { margin: 0; }
       svg { width: 100%; height: 100% }
+
     </style>
   </head>
   <body>
@@ -42,7 +43,10 @@ function isInside(point, bbox){
       var y = bbox[1];
       var width = bbox[2];
       var height = bbox[3];
-      if( point[0] < x || point[1] < y || point[0] > x+width || point[1] > y+height ){
+      if( parseFloat(point[0]) < x || 
+        parseFloat(point[1]) < y || 
+          parseFloat(point[0]) > x+width || 
+            parseFloat(point[1]) > y+height ){
         return false;}
       return true;
     }
@@ -78,16 +82,21 @@ function movecameraonce(){
     if(window.isDDown ){
         cam_pos[0] += viewchange;}
     var temp_vb  = calc_viewbox( cam_pos, sizeofview );
-    var inside_pt = [clients[my_id]['svgobj'].attr('cx'),clients[my_id]['svgobj'].attr('cy')];
+    
+    //var inside_pt = [clients[my_id]['svgobj'].attr('cx'),clients[my_id]['svgobj'].attr('cy')];
+    var inside_pt = [clients[my_id]['svgobj'].matrix.x(0,0),clients[my_id]['svgobj'].matrix.y(0,0)];
+
+
     if ( isInside(inside_pt, temp_vb ) ){
       var anims = clients[my_id]['svgobj'].inAnim();
+
       if(anims.length==0){
         camera_position = cam_pos;
         vb  = temp_vb;
         paper.animate({viewBox: format_viewbox(vb) }, 480, mina.easein, function(){});
       }
       else{
-        var another_pt = [anims[0].anim.attr['cx'],anims[0].anim.attr['cy'] ];
+        var another_pt = anims[0].anim.attr["transform"].substr(1).split(' ');
         if(isInside(another_pt, temp_vb)){
           camera_position = cam_pos;
           vb  = temp_vb;
@@ -172,6 +181,8 @@ function handleKeyUp(event) {
 function setview(){
   var me_obj = clients[my_id];
   camera_position  = [me_obj.x,me_obj.y];
+
+  console.log(camera_position);
   vb  = calc_viewbox( camera_position, sizeofview  );
   buffer_vb=  larger_bbox(vb,1.5);
   paper.attr({
@@ -193,31 +204,82 @@ function setview(){
 
     //on screen click...
     paper.click(function(evt){
+          clients[my_id]['svgobj'].stop();
+
           var xratio = evt.pageX/width;
           var yratio = evt.pageY/height;
           var clickpos = [ vb[0]+(xratio*vb[2]) , vb[1]+(yratio*vb[3])  ] ;
-          var mepos = [parseFloat(clients[my_id]['svgobj'].attr("cx")) , parseFloat(clients[my_id]['svgobj'].attr("cy"))];
+
+          //var mepos = [parseFloat(clients[my_id]['svgobj'].attr("cx")) , parseFloat(clients[my_id]['svgobj'].attr("cy"))];
+          var mepos =[ clients[my_id]['svgobj'].matrix.e ,  clients[my_id]['svgobj'].matrix.f];
           var x1 = clickpos[0];
           var y1 = clickpos[1];
           var x2 = mepos[0];
           var y2 = mepos[1];
           var d = Math.sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) );
-          clients[my_id]['svgobj'].animate( {cx: clickpos[0] , cy: clickpos[1] } , d / clients[my_id]['speed'], mina.linear);
+
+
+
+          var tstring = 't'+clickpos[0]+' '+clickpos[1];
+          console.log(vb);
+          console.log(xratio);
+          console.log(yratio);
+
+          clients[my_id]['svgobj'].animate( { transform: tstring } , d / clients[my_id]['speed'], mina.linear); 
+
+          //clients[my_id]['svgobj'].animate( {cx: clickpos[0] , cy: clickpos[1] } , d / clients[my_id]['speed'], mina.linear);
 
 
     });
 
     
-      
+// setInterval(function(){
+
+//       var i ;
+//     for(i=0;i<current_fires.length;i+=1){
+
+//       if(current_fires[i].lifespan == 0){
+//         current_fires[i].killme();
+//         //current_fires[i] = null;
+//         current_fires.splice(i,1);
+//       }
+//     }
+//   }, 400);
 
 
-// function repeatOften() {
+function actual_A(){
+  // paper.selectAll("circle").forEach(function(e){if(e.attr("opacity")=="0"){e.remove();} })
+  // paper.selectAll("g").forEach(function(e){if(e[0]==undefined){e.remove()}} );
+  requestAnimationFrame(actual_B);
+}
 
-//   requestAnimationFrame(repeatOften);
-// }
+function actual_B(){
+    
+//     if(Math.random()>.96){
+// paper.selectAll("circle").forEach(function(e){if(e.attr("opacity")=="0"){e.remove();} })
+//     paper.selectAll("g").forEach(function(e){if(e[0]==undefined){e.remove()}} );}
+
+    if(flag){
+
+    var m = new bigfire();
+    m.init(parseFloat(passdata.x), parseFloat(passdata.y));
+    current_fires.push(m);
+    flag = false;
 
 
-// requestAnimationFrame(repeatOften);
+    if(current_fires[0].lifespan == 0){
+        current_fires[0].killme();
+        current_fires[0] = null;
+        current_fires.splice(0,1);
+      }
+
+
+  }
+  requestAnimationFrame(actual_A);
+}
+
+
+requestAnimationFrame(actual_A);
 
 
 
