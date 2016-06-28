@@ -52,14 +52,17 @@ wss.broadcast = function broadcast(d) {
 };
 
 var id = setInterval(function() {
-      //console.log(Clients);
-      var data = JSON.stringify({ type: 'indirect_response', 
-                              msg: 'server_timestamp', 
-                              data: Date.now(),
-                              x: Math.random()*500,
-                              y: Math.random()*500});
-      wss.broadcast(data);
+  var center = {x:0,y:0};
+  var radius = 10;
+  var data = JSON.stringify({ type: 'indirect_response', 
+                          msg: 'server_timestamp', 
+                          data: Date.now(),
+                          x: center.x+(radius*Math.cos(2*Math.PI*Math.random())),
+                          y: center.y+(radius*Math.sin(2*Math.PI*Math.random()))
+                        });
+  wss.broadcast(data);
 }, 200);
+
 
 
 var Clients = {};
@@ -75,10 +78,11 @@ wss.on("connection", function(ws) {
   ws.send(JSON.stringify({'msg':'send_userlist', 'userlist':JSON.stringify(Clients)}));
 
   var newjoin = new Player();
-  var x = Math.random()*1000-500.0;
-  var y= Math.random()*1000-500.0;
 
-  console.log(x,y);
+
+  var x = 1000*Math.random() - 500;
+  var y = 1000*Math.random() - 500;
+
 
   newjoin.init(x,y,unique_id);
   Clients[unique_id] = newjoin;
