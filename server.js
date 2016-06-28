@@ -13,7 +13,7 @@ Player.prototype = {
       this.y = y;
       this.id = id;
       this.current_anims = [];
-      this.speed = 0.15;
+      this.speed = 0.24;
     }
 }
 
@@ -45,18 +45,21 @@ console.log("websocket server created");
 
 wss.broadcast = function broadcast(d) {
   wss.clients.forEach(function each(client) {
-    client.send(d);
+    if (client.readyState == client.OPEN) {
+        client.send(d);
+    }
   });
 };
 
 var id = setInterval(function() {
+      //console.log(Clients);
       var data = JSON.stringify({ type: 'indirect_response', 
                               msg: 'server_timestamp', 
                               data: Date.now(),
                               x: Math.random()*500,
                               y: Math.random()*500});
       wss.broadcast(data);
-}, 250);
+}, 200);
 
 
 var Clients = {};
@@ -72,10 +75,11 @@ wss.on("connection", function(ws) {
   ws.send(JSON.stringify({'msg':'send_userlist', 'userlist':JSON.stringify(Clients)}));
 
   var newjoin = new Player();
-  var x = Math.random()*1000 - 500.0;
-  var y= Math.random()*1000 - 500;
+  var x = Math.random()*1000-500.0;
+  var y= Math.random()*1000-500.0;
 
   console.log(x,y);
+
   newjoin.init(x,y,unique_id);
   Clients[unique_id] = newjoin;
 
@@ -87,7 +91,12 @@ wss.on("connection", function(ws) {
   	console.log('server received msg from client');
   	console.log(msg);
     if(msg=='client_move'){
-        console.log('client move');
+        //console.log('client move');
+
+        var inter = json['transform'].substring(1).split(' ');
+        Clients[json['id']].x = inter[0];
+        Clients[json['id']].y = inter[1];
+        wss.broadcast(data);
     }
   });
 

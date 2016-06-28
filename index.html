@@ -24,7 +24,32 @@
 
 <script>
 
-
+Array.prototype.move2 = function(pos1, pos2) {
+    // local variables
+    var i, tmp;
+    // cast input parameters to integers
+    pos1 = parseInt(pos1, 10);
+    pos2 = parseInt(pos2, 10);
+    // if positions are different and inside array
+    if (pos1 !== pos2 && 0 <= pos1 && pos1 <= this.length && 0 <= pos2 && pos2 <= this.length) {
+      // save element from position 1
+      tmp = this[pos1];
+      // move element down and shift other elements up
+      if (pos1 < pos2) {
+        for (i = pos1; i < pos2; i++) {
+          this[i] = this[i + 1];
+        }
+      }
+      // move element up and shift other elements down
+      else {
+        for (i = pos1; i > pos2; i--) {
+          this[i] = this[i - 1];
+        }
+      }
+      // put element from position 1 to destination
+      this[pos2] = tmp;
+    }
+  }
 
 function move(obj, vector){
       obj.attr({cx:parseFloat(me.attr("cx"))+vector[0]});
@@ -83,7 +108,7 @@ function movecameraonce(){
         cam_pos[0] += viewchange;}
     var temp_vb  = calc_viewbox( cam_pos, sizeofview );
     
-    //var inside_pt = [clients[my_id]['svgobj'].attr('cx'),clients[my_id]['svgobj'].attr('cy')];
+    //var inside_pt = [[my_id]['svgobj'].attr('cx'),clients[my_id]['svgobj'].attr('cy')];
     var inside_pt = [clients[my_id]['svgobj'].matrix.x(0,0),clients[my_id]['svgobj'].matrix.y(0,0)];
 
 
@@ -93,14 +118,14 @@ function movecameraonce(){
       if(anims.length==0){
         camera_position = cam_pos;
         vb  = temp_vb;
-        paper.animate({viewBox: format_viewbox(vb) }, 480, mina.easein, function(){});
+        paper.animate({viewBox: format_viewbox(vb) }, 600, mina.easein, function(){});
       }
       else{
         var another_pt = anims[0].anim.attr["transform"].substr(1).split(' ');
         if(isInside(another_pt, temp_vb)){
           camera_position = cam_pos;
           vb  = temp_vb;
-          paper.animate({viewBox: format_viewbox(vb) }, 480, mina.easein, function(){});
+          paper.animate({viewBox: format_viewbox(vb) }, 600, mina.easein, function(){});
         }
       }
 
@@ -110,18 +135,22 @@ function movecameraonce(){
 
 function handleKeyDown(event) {
   // var viewchange = 100;
+  if (event.keyCode === 66) { //66 is "b"
+    window.isBDown = true;}
   if (event.keyCode === 87) { //66 is "b"
-    window.isWDown = true;}
+    window.isWDown = true; movecameraonce();}
   if (event.keyCode === 65) { //66 is "b"
-    window.isADown = true;}
+    window.isADown = true; movecameraonce();}
   if (event.keyCode === 83) { //66 is "b"
-    window.isSDown = true;}
+    window.isSDown = true; movecameraonce();}
   if (event.keyCode === 68) { //66 is "b"
-    window.isDDown = true;  }
-  movecameraonce();
+    window.isDDown = true; movecameraonce(); }
+  
 };
 
 function handleKeyUp(event) {
+  if (event.keyCode === 66) { //66 is "b"
+    window.isBDown = false;}
   if (event.keyCode === 87) {
     window.isWDown = false;}
   if (event.keyCode === 65) {
@@ -182,7 +211,6 @@ function setview(){
   var me_obj = clients[my_id];
   camera_position  = [me_obj.x,me_obj.y];
 
-  console.log(camera_position);
   vb  = calc_viewbox( camera_position, sizeofview  );
   buffer_vb=  larger_bbox(vb,1.5);
   paper.attr({
@@ -199,37 +227,45 @@ function setview(){
     //var me = paper.circle( camera_position[0] , camera_position[1] , 24).attr({fill:"black"});
     //var me;
     //  = me_obj['svgobj'];
-    // me.speed = 0.15; //pixels per second
+    // speeme.speed = 0.15; //pixels per second
     //var me;
 
     //on screen click...
     paper.click(function(evt){
-          clients[my_id]['svgobj'].stop();
-
           var xratio = evt.pageX/width;
           var yratio = evt.pageY/height;
           var clickpos = [ vb[0]+(xratio*vb[2]) , vb[1]+(yratio*vb[3])  ] ;
-
-          //var mepos = [parseFloat(clients[my_id]['svgobj'].attr("cx")) , parseFloat(clients[my_id]['svgobj'].attr("cy"))];
-          var mepos =[ clients[my_id]['svgobj'].matrix.e ,  clients[my_id]['svgobj'].matrix.f];
-          var x1 = clickpos[0];
-          var y1 = clickpos[1];
-          var x2 = mepos[0];
-          var y2 = mepos[1];
-          var d = Math.sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) );
-
-
-
-          var tstring = 't'+clickpos[0]+' '+clickpos[1];
-          console.log(vb);
-          console.log(xratio);
-          console.log(yratio);
-
-          clients[my_id]['svgobj'].animate( { transform: tstring } , d / clients[my_id]['speed'], mina.linear); 
-
-          //clients[my_id]['svgobj'].animate( {cx: clickpos[0] , cy: clickpos[1] } , d / clients[my_id]['speed'], mina.linear);
+          if(window.isBDown){
+              //cause fire where click??
+          }
+          else{
+            //var mepos = [parseFloat(clients[my_id]['svgobj'].attr("cx")) , parseFloat(clients[my_id]['svgobj'].attr("cy"))];
+            var mepos =[ clients[my_id]['svgobj'].matrix.get(4) ,  clients[my_id]['svgobj'].matrix.get(5)];
+            var x1 = parseFloat(clickpos[0]);
+            var y1 = parseFloat(clickpos[1]);
+            var x2 = mepos[0];
+            var y2 = mepos[1];
+            var d = Math.sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) );
+            var tstring = 't'+x1.toFixed(2)+' '+y1.toFixed(2);
+            // console.log(vb);
+            // console.log(xratio);
+            // console.log(yratio);
 
 
+              var event = { 'msg':'client_move' ,
+                            'id':my_id,
+                            'time' : d / clients[my_id]['speed'] ,
+                            'transform': tstring,
+                            'easing': 'linear'};
+              connection.sendanimation(event);
+
+            //clients[my_id]['svgobj'].animate( { transform: tstring } , d / clients[my_id]['speed'], mina.linear); 
+            mepos = null;
+            //clients[my_id]['svgobj'].animate( {cx: clickpos[0] , cy: clickpos[1] } , d / clients[my_id]['speed'], mina.linear);
+          }
+          clickpos = null;
+          yratio = null;
+          xratio = null;
     });
 
     
@@ -247,46 +283,72 @@ function setview(){
 //   }, 400);
 
 
+flag= false;
+newflag = false; //one frame after init then begin it
+mouseclicktoo = false;
+
+
 function actual_A(){
-  // paper.selectAll("circle").forEach(function(e){if(e.attr("opacity")=="0"){e.remove();} })
-  // paper.selectAll("g").forEach(function(e){if(e[0]==undefined){e.remove()}} );
+
+  var currentlength = current_fires.length;
+  //kill every frame maintainence
+  if(currentlength > 1){
+    if(current_fires[0].lifespan==0){
+      current_fires[0].killme();
+      current_fires[0] = null;
+      current_fires.splice(0,1);
+    }
+  }
   requestAnimationFrame(actual_B);
 }
 
+
+
+
 function actual_B(){
-    
-//     if(Math.random()>.96){
-// paper.selectAll("circle").forEach(function(e){if(e.attr("opacity")=="0"){e.remove();} })
-//     paper.selectAll("g").forEach(function(e){if(e[0]==undefined){e.remove()}} );}
+  var currentlength = current_fires.length;
+  var num_msgs = messagebus.length;
+  var i, packet;
+  var count = 0 ;
 
-    if(flag){
+  for(i=0;i<num_msgs;i+=1){
+    packet = messagebus.shift();
 
-    var m = new bigfire();
-    m.init(parseFloat(passdata.x), parseFloat(passdata.y));
-    current_fires.push(m);
-    flag = false;
+    if(packet.msg == 'server_timestamp'){
+      var m = new bigfire();
+      m.init(parseFloat(packet.x), parseFloat(packet.y));
+      current_fires.push(m);
+      messagebus.push({'msg':'firewaiting'});
+    }
 
-
-    if(current_fires[0].lifespan == 0){
-        current_fires[0].killme();
-        current_fires[0] = null;
-        current_fires.splice(0,1);
-      }
+    if(packet.msg=='firewaiting'){
+      current_fires[currentlength-(count+1)].begin();
+      count +=1;
+    }
 
 
   }
+
+  if(currentlength > 1){
+    if(current_fires[0].lifespan==0){
+      current_fires[0].killme();
+      current_fires[0] = null;
+      current_fires.splice(0,1);
+    }
+  }
+
   requestAnimationFrame(actual_A);
 }
 
 
-requestAnimationFrame(actual_A);
+requestAnimationFrame(actual_B);
 
 
 
 //var m = new tricircle2(parseFloat(me.attr('cx')),parseFloat(me.attr('cy')),100);
 
-//var n = new screenFire();
-// n.init(100);
+var n = new screenFire();
+n.init(100);
 //n.endme();
 
 

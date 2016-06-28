@@ -20,6 +20,8 @@ var current_fires = [];
 var flag = false;
 var passdata;
 
+var messagebus = [];
+
 connection.onerror = function (error){
 	console.error('Websocket error '+error);
 };
@@ -28,13 +30,20 @@ connection.onopen = function(){
 	console.log("client: on open");
 };
 		
-connection.sendposition = function(x,y){
+connection.sendanimation = function(event){
+
+	connection.send(JSON.stringify( event ));
+	//event = { 'msg':'client_move' ,
+				// 'id':12342342,
+				// 'time' : 1.24,
+				// 'transform': 't124 242'
+				// 'easing': 'linear'}
 };
 
 connection.sendmessage = function(event){
 	//var out = "sent message: "+JSON.parse(event);
 	//console.log(out);
-	//connection.send(JSON.stringify( event ));
+	connection.send(JSON.stringify( event ));
 };
 
 connection.onmessage = function (event) {
@@ -50,7 +59,9 @@ connection.onmessage = function (event) {
 		else if(msg=='send_userlist'){
 			clients = JSON.parse(json['userlist']);
 			for(var key in clients){
-				clients[key]['svgobj'] = paper.circle(clients[key].x,clients[key].y,24);
+
+				clients[key]['svgobj'] = paper.circle(0,0,24).transform('t'+clients[key].x+' '+clients[key].y);
+				// clients[key]['svgobj'] = paper.circle(clients[key].x,clients[key].y,24);
 			}
 		}
 		else if(msg=='client_join'){
@@ -59,17 +70,18 @@ connection.onmessage = function (event) {
 			if(true){//person.id != my_id){//dont add self to clients list
 				clients[person.id] = person;
 				console.log(person);
-
-				
 				var mestring =   't'+person.x+' '+person.y;
 				clients[person.id]['svgobj'] = paper.circle(0,0,24).transform( mestring );
-
-
 				if(person.id == my_id){
 				setview();}
 			}
 		}
-		else if(msg=='broadcast_move'){
+		else if(msg=='client_move'){
+			var id = json['id'];
+			var time = json['time'];
+			var transform = json['transform'];
+			var easing = json['easing'];
+			clients[id]['svgobj'].animate( { transform: transform } ,time, mina[easing]); 
 			//animate player
 		}
 		else if(msg=='broadcast_leave'){
@@ -92,6 +104,8 @@ connection.onmessage = function (event) {
 		 //    current_fires.push(m);
 		 	passdata = json;
 		 	flag  = true;
+		 	messagebus.push(json);
+
 
 		}
 		else{

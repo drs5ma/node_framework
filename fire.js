@@ -6,17 +6,20 @@ bigfire.prototype = {
     init: function init(x,y){
       this.x = x;
       this.y = y;
+      this.started = false;
       this.lifespan =10;
       this.radius = 100;
+      this.timing = [500,500];
       this.particles = Snap.set();
       var i;
 
             for(i=0;i<this.lifespan;i+=1){
           //create circle
           //this.grp.add(particle);
-          this.particles.push(paper.circle(this.x,this.y, 48).attr({fill: "orange",
+          this.particles.push(paper.circle(this.x,this.y, 24).attr({fill: "orange",
                                                                 strokeWidth: 3, 
                                                                 opacity:0.4}));
+
           //set in motion
           
           //console.log(mystring);
@@ -26,30 +29,23 @@ bigfire.prototype = {
       }
 
 
-      this.begin();
+      // this.begin();
     },
-    callback: function(a){
-              var self = this;
-              return function(){
+    // callback: function callback(a){
+    //           var self = this;
+    //           return function(){
 
-                    // self.particles[a].attr({
-                    //         visibility: "hidden"
-                    //     });
-                    //console.log(self.grp[a]);
-                    //console.log(self.grp[0]);
-                    //self.grp[a].matrix = null;
-                    self.particles[a].matrix = null;
-                    self.particles[a].remove();
-                    //console.log(self.particles[a]);
-                    //self.particles[a] = null;
-                    self.lifespan -= 1;
-              }
+    //                 self.particles[a].remove();
+
+    //                 self.lifespan -= 1;
+    //           }
       
-    },
+    // },
     begin: function begin(){
+      this.started = true;
+
       var self = this;
       var i;
-
       // function callback(a){
       //         return function(){
 
@@ -66,22 +62,26 @@ bigfire.prototype = {
       // }
       //var myMatrix = new Snap.Matrix();
 
+      function decreaselifespan(){self.lifespan-=1;}
  for(i=0;i<this.lifespan;i+=1){
 
   var rand_x = Math.random()*this.radius*2 - this.radius  ;//+this.x ;
           var rand_y = Math.random()*this.radius*2  - this.radius;//+ this.y;
           //var rand_t = this.turnover(240,960);
-          var rand_t = turnover(500,250);
+          var rand_t = turnover(this.timing[0],this.timing[1]);
           
           
           //myMatrix = myMatrix.translate(rand_x, rand_y);
 
           //particle.animate({transform:myMatrix.toTransformString(), opacity:0.0}, rand_t, callback(i) );
           //myMatrix = null;
-          var mystring  = 't'+rand_x+' '+rand_y;
+          var mystring  = 't'+rand_x+' '+rand_y+' s0 0';
+          //var mystring  = 't'+rand_x+' '+rand_y;
+          //this.particles[i].animate({transform:mystring }, rand_t ,self.callback(i) );
+          //function(){self.lifespan -=1}
+          this.particles[i].animate({transform:mystring }, rand_t ,decreaselifespan ) ;//self.callback(i) );
+          //this.particles[i].animate({transform:mystring, opacity:0.0, r:0}, rand_t, function(){self.lifespan -=1;} ) ;//self.callback(i) );
 
-          this.particles[i].animate({transform:mystring, opacity:0.0}, rand_t) ;//self.callback(i) );
-          
 
       //self = null;
       //myMatrix = null;
@@ -91,23 +91,39 @@ bigfire.prototype = {
     killme: function killme(){
 
 
-      // var  i;
-      // for(i=this.particles.length-1;i>=0;i-=1){
-      //   // this.grp[i].stop();
-      //   // this.grp[i] = null;
-      //   // this.grp.remove(this.grp[i]);
-      //   //this.particles[i].stop();
-      //   this.particles[i].remove();
-      //   this.particles[i] = null;
-      //   //this.particles.splice(i,1);
-      // }
+
+      // this.grp.remove();
+      // this.grp = null;
+
+      var  i;
+      for(i=this.particles.length-1;i>=0;i-=1){
+        // this.grp[i].stop();
+        // this.grp[i] = null;
+        // this.grp.remove(this.grp[i]);
+        //this.particles[i].stop();
+        this.particles[i].remove();
+        this.particles[i] = null;
+        //this.particles.splice(i,1);
+      }
       this.particles.clear();
       this.particles = null;
+
+
       // this.grp.stop();
       // this.grp.remove();
       // this.grp = null;
       // console.log(this.grp);
       
+    },
+    endafterdone: function endafterdone(){
+      var self = this;
+      setInterval(
+        function(){
+      self.killme();
+    }, this.timing[0]+this.timing[1]);
+
+
+
     }
 }
 
@@ -115,6 +131,8 @@ bigfire.prototype = {
 
 function screenFire(){}
 screenFire.prototype = {
+
+
     init:function(freq){
       this.freq = freq;
       this.firelist =[];
@@ -124,7 +142,10 @@ screenFire.prototype = {
               var m =  new bigfire();
 
               m.init(Math.random()*vb[2]+vb[0],vb[1]+Math.random()*vb[3]);
+              m.begin();
+
               self.firelist.push(m);
+
       }, this.freq);
       
       this.destroy = setInterval(function(){ 
