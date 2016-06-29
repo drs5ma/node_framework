@@ -13,10 +13,22 @@ Player.prototype = {
       this.y = y;
       this.id = id;
       this.current_anims = [];
-      this.speed = 0.24;
+      this.speed = 0.15;
+      this.bbox = {};
     }
 }
-
+function isInside(bbox, point){
+      var x = bbox[0];
+      var y = bbox[1];
+      var width = bbox[2];
+      var height = bbox[3];
+      if( parseFloat(point[0]) < x || 
+        parseFloat(point[1]) < y || 
+          parseFloat(point[0]) > x+width || 
+            parseFloat(point[1]) > y+height ){
+        return false;}
+      return true;
+}
 //provision the database
 var mongoose = require ("mongoose"); // The reason for this demo.
 var mongoURI = 'localhost:27017/node_template';
@@ -51,17 +63,33 @@ wss.broadcast = function broadcast(d) {
   });
 };
 
+wss.broadcast_ifinbbox = function broadcast2(d, point) {
+  wss.clients.forEach(function each(client) {
+    if (client.readyState == client.OPEN) {
+      var unique_id = client.upgradeReq.headers['sec-websocket-key'];
+      //console.log( Clients[unique_id]['bbox'] , point );
+      if(isInside( Clients[unique_id]['bbox'] , point )){
+          client.send(d);
+      }
+    }
+  });
+};
+
 var id = setInterval(function() {
   var center = {x:0,y:0};
-  var radius = 10;
+  var radius = 800;
+  var randx = center.x+(radius*Math.cos(2*Math.PI*Math.random()));
+  var randy = center.y+(radius*Math.sin(2*Math.PI*Math.random()));
   var data = JSON.stringify({ type: 'indirect_response', 
                           msg: 'server_timestamp', 
                           data: Date.now(),
-                          x: center.x+(radius*Math.cos(2*Math.PI*Math.random())),
-                          y: center.y+(radius*Math.sin(2*Math.PI*Math.random()))
+                          x: randx,
+                          y: randy
                         });
-  wss.broadcast(data);
-}, 200);
+
+  wss.broadcast_ifinbbox(data, [randx,randy]);
+
+}, 40);
 
 
 
@@ -96,12 +124,19 @@ wss.on("connection", function(ws) {
   	console.log(msg);
     if(msg=='client_move'){
         //console.log('client move');
-
         var inter = json['transform'].substring(1).split(' ');
         Clients[json['id']].x = inter[0];
         Clients[json['id']].y = inter[1];
         wss.broadcast(data);
     }
+    else if(msg=='client_bbox'){
+      console.log(json['bbox']);
+      Clients[json['id']].bbox = JSON.parse(json['bbox']);
+    }
+    else if(msg=='client_clickfire'){
+       wss.broadcast_ifinbbox(data, json['pos']);
+    }
+
   });
 
 

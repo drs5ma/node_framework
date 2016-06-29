@@ -29,6 +29,7 @@ connection.onerror = function (error){
 connection.onopen = function(){
 	console.log("client: on open");
 };
+
 		
 connection.sendanimation = function(event){
 
@@ -39,6 +40,12 @@ connection.sendanimation = function(event){
 				// 'transform': 't124 242'
 				// 'easing': 'linear'}
 };
+connection.sendbbox = function(bbox){
+
+	var json = {'msg':'client_bbox', id: my_id,'bbox': JSON.stringify(bbox)};
+	connection.send(JSON.stringify( json ));
+
+}
 
 connection.sendmessage = function(event){
 	//var out = "sent message: "+JSON.parse(event);
@@ -90,6 +97,12 @@ connection.onmessage = function (event) {
 			delete clients[json['id']]
 			// remove player
 		}
+		else if(msg=='client_clickfire'){
+			var newf = new bigfire();
+			newf.init(json['pos'][0], json['pos'][1]);
+			current_fires.push(newf);
+			messagebus.push({'msg':'firewaiting'});
+		}
 		else if(msg=='server_timestamp'){
 			// var i ;
 			// for(i=0;i<current_fires.length;i+=1){
@@ -102,8 +115,7 @@ connection.onmessage = function (event) {
 			// var m = new bigfire();
 		 //    m.init(parseFloat(json.x), parseFloat(json.y));
 		 //    current_fires.push(m);
-		 	passdata = json;
-		 	flag  = true;
+
 		 	messagebus.push(json);
 
 
