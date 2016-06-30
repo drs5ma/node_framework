@@ -10,7 +10,6 @@
   <body>
 
 
-    
     <script src="jquery.min.js"></script>
     <script src="Vector.js"></script>
     <script src="fire.js"></script>
@@ -23,6 +22,7 @@
 
 
 <script>
+
 
 Array.prototype.move2 = function(pos1, pos2) {
     // local variables
@@ -97,7 +97,7 @@ function larger_bbox(bbox, ratio){
 
 function movecameraonce(){
     var cam_pos = [camera_position[0],camera_position[1]];
-    var viewchange = 140;
+    var viewchange = 200;
     if(window.isWDown ){
         cam_pos[1] -= viewchange;}
     if(window.isSDown ){
@@ -117,7 +117,7 @@ function movecameraonce(){
         camera_position = cam_pos;
         vb  = temp_vb;
 
-        paper.animate({viewBox: format_viewbox(vb) }, 600, mina.easein, function(){});
+        paper.animate({viewBox: format_viewbox(vb) }, 800, mina.easeinout, function(){});
       }
       else{
         var another_pt = anims[0].anim.attr["transform"].substr(1).split(' ');
@@ -125,7 +125,7 @@ function movecameraonce(){
           connection.sendbbox(temp_vb);
           camera_position = cam_pos;
           vb  = temp_vb;
-          paper.animate({viewBox: format_viewbox(vb) }, 600, mina.easein, function(){});
+          paper.animate({viewBox: format_viewbox(vb) }, 800, mina.easeinout, function(){});
         }
       }
     }
@@ -182,6 +182,18 @@ function handleKeyUp(event) {
     var height = window.innerHeight;
     window.addEventListener('keydown', handleKeyDown, false);
     window.addEventListener('keyup', handleKeyUp, false);
+
+    document.focused = true;
+
+    window.addEventListener('focus', function() {
+      document.focused = true;
+    });
+
+    window.addEventListener('blur', function() {
+      document.focused = false;
+    });
+
+
     var paper = Snap(5000,5000); //world map
     paper.attr('preserveAspectRatio', 'none');
     paper.attr({id: "svg1"});
@@ -222,8 +234,9 @@ function setview(){
     //draw objects
     var circle = paper.circle(0,0,200);
     circle.attr({fill:"orange", opacity:0.24});
-    //var tree = paper.path('M0,0L10,30L90,45L0,0').attr({fill:'green', stroke:'black', strokeWidth:3});
-    //tree.transform( 't100,100');
+
+    var tree = paper.path('').attr({'path':'M0,0L10,30L90,45L0,0', fill:'green', stroke:'black', strokeWidth:3});
+    tree.transform( 't100,100');
 
     //var me = paper.circle( camera_position[0] , camera_position[1] , 24).attr({fill:"black"});
     //var me;
@@ -232,18 +245,25 @@ function setview(){
     //var me;
 
     //on screen click...
+    var lastfireclick = performance.now();
+    var timeout = 240;//ms
     paper.click(function(evt){
+
           var xratio = evt.pageX/width;
           var yratio = evt.pageY/height;
           var clickpos = [ vb[0]+(xratio*vb[2]) , vb[1]+(yratio*vb[3])  ] ;
           if(window.isBDown){
-              //cause fire where click??
-              //send the request and handle the request in client.js
-              var event = { 'msg':'client_clickfire' ,
-                      'id':'not necessary',
-                      'pos': clickpos};
 
-              connection.sendanimation(event);
+              if(performance.now() -  lastfireclick > timeout && current_fires.length<24){
+                //cause fire where click??
+                //send the request and handle the request in client.js
+                var event = { 'msg':'client_clickfire' ,
+                        'id':'not necessary',
+                        'pos': clickpos};
+
+                connection.sendanimation(event);
+                lastfireclick = performance.now();
+              }
 
           }
           else{
@@ -324,20 +344,18 @@ function actual_A(){
 
   }
 
-  
-
   //routine killing spree
-  if(currentlength > 1){
-    if(current_fires[0].lifespan==0){
-      current_fires[0].killme();
-      current_fires[0] = null;
-      current_fires.splice(0,1);
+  if(currentlength > 2){
+    if(current_fires[1].lifespan==0){
+      current_fires[1].killme();
+      current_fires[1] = null;
+      current_fires.splice(1,2);
     }
   }
   requestAnimationFrame(actual_B);
+
+
 }
-
-
 
 
 function actual_B(){

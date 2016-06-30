@@ -58,11 +58,9 @@ connection.onmessage = function (event) {
 		var json = JSON.parse(event.data);
 		var msg = json['msg'];
 
-
-		if(msg =='assign_id'){
-			my_id = json['id'];
+		if(msg=='server_timestamp'){
+		 	messagebus.push(json);
 		}
-
 		else if(msg=='send_userlist'){
 			clients = JSON.parse(json['userlist']);
 			for(var key in clients){
@@ -103,22 +101,8 @@ connection.onmessage = function (event) {
 			current_fires.push(newf);
 			messagebus.push({'msg':'firewaiting'});
 		}
-		else if(msg=='server_timestamp'){
-			// var i ;
-			// for(i=0;i<current_fires.length;i+=1){
-			// 	if(current_fires[i].lifespan == 0){
-			// 		current_fires[i].killme();
-			// 		current_fires[i] = null;
-			// 		current_fires.splice(i,1);
-			// 	}
-			// }
-			// var m = new bigfire();
-		 //    m.init(parseFloat(json.x), parseFloat(json.y));
-		 //    current_fires.push(m);
-
-		 	messagebus.push(json);
-
-
+		else if(msg =='assign_id'){
+			my_id = json['id'];
 		}
 		else{
 			console.log('unsupported msg type');

@@ -4,7 +4,11 @@ var express = require("express");
 var app = express();
 var port = process.env.PORT || 5000;
 var router = express.Router();
-var path = require('path');
+var path = require("path");
+var backend = require('./backend.js');
+
+
+
 
 function Player(){}
 Player.prototype = {
@@ -29,16 +33,8 @@ function isInside(bbox, point){
         return false;}
       return true;
 }
-//provision the database
-var mongoose = require ("mongoose"); // The reason for this demo.
-var mongoURI = 'localhost:27017/node_template';
-var uristring = process.env.MONGODB_URI || mongoURI;
-mongoose.connect(uristring, function (err, res) {
-      if (err) {
-      console.log ('ERROR connecting to: ' + uristring + '. ' + err);} 
-      else {
-      console.log ('Succeeded connected to: ' + uristring);}
-});
+
+
 
 //routing static index page
 app.use(express.static(__dirname + "/"))
@@ -77,7 +73,7 @@ wss.broadcast_ifinbbox = function broadcast2(d, point) {
 
 var id = setInterval(function() {
   var center = {x:0,y:0};
-  var radius = 800;
+  var radius = 500;
   var randx = center.x+(radius*Math.cos(2*Math.PI*Math.random()));
   var randy = center.y+(radius*Math.sin(2*Math.PI*Math.random()));
   var data = JSON.stringify({ type: 'indirect_response', 
@@ -89,7 +85,7 @@ var id = setInterval(function() {
 
   wss.broadcast_ifinbbox(data, [randx,randy]);
 
-}, 40);
+}, 100);
 
 
 
