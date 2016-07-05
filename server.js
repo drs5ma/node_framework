@@ -85,72 +85,101 @@ var id = setInterval(function() {
 
   wss.broadcast_ifinbbox(data, [randx,randy]);
 
-}, 100);
+}, 240);
+
 
 
 
 var Clients = {};
-
-// {id: Player(), id: Player()}
-
-wss.on("connection", function(ws) {
-  //confirm the connection is open from the server
-  console.log("websocket connection open");
-	var unique_id = ws.upgradeReq.headers['sec-websocket-key'];
-
-	ws.send(JSON.stringify({'msg':'assign_id', 'id':unique_id}));
-  ws.send(JSON.stringify({'msg':'send_userlist', 'userlist':JSON.stringify(Clients)}));
-
-  var newjoin = new Player();
+var db_contents = [];
 
 
-  var x = 1000*Math.random() - 500;
-  var y = 1000*Math.random() - 500;
+var handle_wss = function(){
+  wss.on("connection", function(ws) {
+    console.log(db_contents);
+
+    // backend.addElement('redcircle', 
+    //   JSON.stringify({fill: 'red', 
+    //    transform: 'matrix(1,0,0,1,-45.29,114.66)',
+    //    r: '8',
+    //    cy: '24',
+    //    cx: '24' })
+    // );
+
+    //confirm the connection is open from the server
+    console.log("websocket connection open");
+    var unique_id = ws.upgradeReq.headers['sec-websocket-key'];
+
+    ws.send(JSON.stringify({'msg':'assign_id', 'id':unique_id}));
+    ws.send(JSON.stringify({'msg':'send_userlist', 'userlist':JSON.stringify(Clients)}));
+
+    var newjoin = new Player();
 
 
-  newjoin.init(x,y,unique_id);
-  Clients[unique_id] = newjoin;
+    var x = 1000*Math.random() - 500;
+    var y = 1000*Math.random() - 500;
 
-  wss.broadcast(JSON.stringify({'msg':'client_join', 'client_obj':JSON.stringify(newjoin)}));
 
-  ws.on('message', function(data){
-    var json = JSON.parse(data);
-    var msg = json['msg'];
-  	console.log('server received msg from client');
-  	console.log(msg);
-    if(msg=='client_move'){
-        //console.log('client move');
-        var inter = json['transform'].substring(1).split(' ');
-        Clients[json['id']].x = inter[0];
-        Clients[json['id']].y = inter[1];
-        wss.broadcast(data);
-    }
-    else if(msg=='client_bbox'){
-      console.log(json['bbox']);
-      Clients[json['id']].bbox = JSON.parse(json['bbox']);
-    }
-    else if(msg=='client_clickfire'){
-       wss.broadcast_ifinbbox(data, json['pos']);
-    }
+    newjoin.init(x,y,unique_id);
+    Clients[unique_id] = newjoin;
+
+    wss.broadcast(JSON.stringify({'msg':'client_join', 'client_obj':JSON.stringify(newjoin)}));
+
+    ws.on('message', function(data){
+      var json = JSON.parse(data);
+      var msg = json['msg'];
+      console.log('server received msg from client');
+      console.log(msg);
+      if(msg=='client_move'){
+          //console.log('client move');
+          var inter = json['transform'].substring(1).split(' ');
+          Clients[json['id']].x = inter[0];
+          Clients[json['id']].y = inter[1];
+          wss.broadcast(data);
+      }
+      else if(msg=='client_bbox'){
+        console.log(json['bbox']);
+        Clients[json['id']].bbox = JSON.parse(json['bbox']);
+      }
+      else if(msg=='client_clickfire'){
+         wss.broadcast_ifinbbox(data, json['pos']);
+      }
+      else if(msg=='client_mousemove'){
+          wss.broadcast(data);
+      }
+
+
+    });
+
+      //when close connection, remove the set interval
+    ws.on("close", function() {
+        console.log("websocket %s connection close", ws);
+        //remove client from list
+        Clients[unique_id] = null;
+        delete Clients[unique_id];
+        //broadcast the loss;
+        wss.broadcast(JSON.stringify({'msg':'broadcast_leave', id: unique_id}));
+    });
+
+
 
   });
-
-
-  	//when close connection, remove the set interval
- 	ws.on("close", function() {
-    	console.log("websocket %s connection close", ws);
-      //remove client from list
-      Clients[unique_id] = null;
-      delete Clients[unique_id];
-      //broadcast the loss;
-      wss.broadcast(JSON.stringify({'msg':'broadcast_leave', id: unique_id}));
-  });
+}
 
 
 
-});
 
-
+//load the db before websockets opens
+var query = backend.getAll();
+query.exec()
+  .then(function(docs,err){
+                        if(err){return console.log(err);}
+                        docs.forEach(function(doc){
+                          db_contents.push(doc);
+                        });
+                        return;
+                    })
+  .then(handle_wss);
 
 
 

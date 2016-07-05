@@ -30,7 +30,12 @@ connection.onopen = function(){
 	console.log("client: on open");
 };
 
-		
+
+connection.sendmousedata = function(event){
+
+	connection.send(JSON.stringify(event));
+
+};
 connection.sendanimation = function(event){
 
 	connection.send(JSON.stringify( event ));
@@ -61,12 +66,29 @@ connection.onmessage = function (event) {
 		if(msg=='server_timestamp'){
 		 	messagebus.push(json);
 		}
+		else if(msg=='client_mousemove'){
+
+          clients[json.id]['svgobj'][1].attr({cx: json.x ,cy: json.y}); 
+
+		}
 		else if(msg=='send_userlist'){
 			clients = JSON.parse(json['userlist']);
+
 			for(var key in clients){
 
-				clients[key]['svgobj'] = paper.circle(0,0,24).transform('t'+clients[key].x+' '+clients[key].y);
-				// clients[key]['svgobj'] = paper.circle(clients[key].x,clients[key].y,24);
+				// clients[key]['svgobj'] = paper.g();
+				// clients[key]['svgobj'].transform('t'+clients[key].x+' '+clients[key].y);
+				// clients[key]['svgobj'].add( paper.circle(0,-24,24) );
+				// clients[key]['svgobj'].circle(0,-34,10).transform('t0 -34');
+				var amestring = 't'+clients[key].x+' '+clients[key].y;
+				clients[key]['svgobj'] = paper.g(paper.circle(0,0,24)).transform( amestring );
+				clients[key]['svgobj'].add(  paper.circle(-29,0,5) );
+				clients[key]['svgobj'].add( 
+					paper.circlePath(0,0,29).attr({ fill: "none", stroke: "red" })
+				);
+
+				
+				//clients[key]['svgobj'] = paper.circle(0,0,24).transform('t'+clients[key].x+' '+clients[key].y);
 			}
 		}
 		else if(msg=='client_join'){
@@ -76,7 +98,14 @@ connection.onmessage = function (event) {
 				clients[person.id] = person;
 				console.log(person);
 				var mestring =   't'+person.x+' '+person.y;
-				clients[person.id]['svgobj'] = paper.circle(0,0,24).transform( mestring );
+
+				//clients[person.id]['svgobj'] = paper.circle(0,0,24).transform( mestring );
+				clients[person.id]['svgobj'] = paper.g(paper.circle(0,0,24)).transform( mestring );
+				clients[person.id]['svgobj'].add(  paper.circle(-29,0,5) );
+				clients[person.id]['svgobj'].add( 
+					paper.circlePath(0,0,29).attr({ fill: "none", stroke: "red" })
+				);
+
 				if(person.id == my_id){
 				setview();}
 			}
