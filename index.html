@@ -99,7 +99,9 @@ function larger_bbox(bbox, ratio){
   var y = bbox[1];
   var width = bbox[2];
   var height = bbox[3];
-  var [cx,cy] = centerof_bbox(bbox);
+  var mybbox= centerof_bbox(bbox);
+  var cx = mybbox[0];
+  var cy = mybbox[1];
   var rw = ratio*width;
   var rh = ratio*height;
   return [ cx - (rw/2.0), cy - (rh/2.0) , rw, rh ];
